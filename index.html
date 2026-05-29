@@ -298,6 +298,63 @@
       border-color: rgba(239, 248, 246, 0.42);
     }
 
+    .tile.reveal {
+      --reveal-bg: var(--gray);
+      --reveal-border: var(--gray);
+      --reveal-color: var(--ink);
+      animation: revealFlipColor 620ms ease both;
+      transform-origin: center;
+      transform-style: preserve-3d;
+    }
+
+    .tile.reveal-green {
+      --reveal-bg: var(--green);
+      --reveal-border: var(--green);
+      --reveal-color: #001d13;
+    }
+
+    .tile.reveal-yellow {
+      --reveal-bg: var(--yellow);
+      --reveal-border: var(--yellow);
+      --reveal-color: #171000;
+    }
+
+    .tile.reveal-gray {
+      --reveal-bg: var(--gray);
+      --reveal-border: var(--gray);
+      --reveal-color: var(--ink);
+    }
+
+    @keyframes revealFlipColor {
+      0% {
+        background: rgba(2, 9, 14, 0.68);
+        border-color: rgba(239, 248, 246, 0.42);
+        color: var(--ink);
+        transform: rotateX(0deg);
+      }
+
+      49% {
+        background: rgba(2, 9, 14, 0.68);
+        border-color: rgba(239, 248, 246, 0.42);
+        color: var(--ink);
+        transform: rotateX(90deg);
+      }
+
+      50% {
+        background: var(--reveal-bg);
+        border-color: var(--reveal-border);
+        color: var(--reveal-color);
+        transform: rotateX(90deg);
+      }
+
+      100% {
+        background: var(--reveal-bg);
+        border-color: var(--reveal-border);
+        color: var(--reveal-color);
+        transform: rotateX(0deg);
+      }
+    }
+
     .tile.green {
       background: var(--green);
       border-color: var(--green);
@@ -363,6 +420,12 @@
 
     .key.wide {
       font-size: 0.76rem;
+    }
+
+    .key:disabled {
+      cursor: default;
+      opacity: 0.65;
+      transform: none;
     }
 
     .key.green {
@@ -792,6 +855,9 @@
       const KEY_ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
       const EMOJI = { green: "🟩", yellow: "🟨", gray: "⬛" };
       const RANK = { gray: 1, yellow: 2, green: 3 };
+      const SITE_URL = "https://abyssle.com";
+      const REVEAL_STAGGER_MS = 180;
+      const REVEAL_DURATION_MS = 620;
 
       const stage = document.querySelector("#stage");
       const dateLabel = document.querySelector("#dateLabel");
@@ -807,6 +873,9 @@
         daily: null,
         currentGuess: "",
         message: "",
+        isRevealing: false,
+        revealingRow: null,
+        revealTimer: null,
         rulesOpen: false,
         statsOpen: false
       };
@@ -933,6 +1002,7 @@
         const active = rowIndex === app.daily.guesses.length && !app.daily.completed;
         const letters = active ? app.currentGuess : submittedGuess;
         const feedback = app.daily.feedback[rowIndex] || [];
+        const revealing = app.isRevealing && rowIndex === app.revealingRow;
 
         for (let col = 0; col < 5; col += 1) {
           const tile = document.createElement("div");
@@ -940,7 +1010,12 @@
           const letter = letters[col] || "";
           tile.textContent = letter;
           if (letter) tile.classList.add("filled");
-          if (feedback[col]) tile.classList.add(feedback[col]);
+          if (revealing && feedback[col]) {
+            tile.classList.add("reveal", `reveal-${feedback[col]}`);
+            tile.style.animationDelay = `${col * REVEAL_STAGGER_MS}ms`;
+          } else if (feedback[col]) {
+            tile.classList.add(feedback[col]);
+          }
           row.append(tile);
         }
 
@@ -980,6 +1055,7 @@
         key.type = "button";
         key.className = ["key", extraClass].filter(Boolean).join(" ");
         key.textContent = label;
+        key.disabled = app.isRevealing;
         key.addEventListener("click", () => handleInput(value));
         return key;
       }
@@ -1123,7 +1199,7 @@
       }
 
       function handlePhysicalKey(event) {
-        if (!app.daily || app.daily.completed || !app.daily.declaration) return;
+        if (!app.daily || app.daily.completed || !app.daily.declaration || app.isRevealing) return;
         if (event.metaKey || event.ctrlKey || event.altKey) return;
         if (event.key === "Enter" || event.key === "Backspace" || /^[a-zA-Z]$/.test(event.key)) {
           event.preventDefault();
@@ -1132,7 +1208,7 @@
       }
 
       function handleInput(value) {
-        if (!app.daily || app.daily.completed || !app.daily.declaration) return;
+        if (!app.daily || app.daily.completed || !app.daily.declaration || app.isRevealing) return;
 
         if (value === "Enter") {
           submitGuess();
@@ -1154,6 +1230,8 @@
       }
 
       function submitGuess() {
+        if (app.isRevealing) return;
+
         if (!/^[a-z]{5}$/.test(app.currentGuess)) {
           app.message = "Enter 5 letters.";
           render();
@@ -1168,17 +1246,39 @@
 
         const win = guess === app.daily.answer;
         const outOfGuesses = app.daily.guesses.length >= app.daily.declaration;
+        startReveal(win, win || outOfGuesses);
+      }
 
-        if (win || outOfGuesses) {
-          completeDaily(win);
-        } else {
+      function startReveal(win, shouldComplete) {
+        if (app.revealTimer) {
+          window.clearTimeout(app.revealTimer);
+        }
+
+        app.isRevealing = true;
+        app.revealingRow = app.daily.guesses.length - 1;
+        app.message = "";
+        render();
+
+        const totalRevealMs = REVEAL_DURATION_MS + (4 * REVEAL_STAGGER_MS) + 120;
+        app.revealTimer = window.setTimeout(() => {
+          app.isRevealing = false;
+          app.revealingRow = null;
+          app.revealTimer = null;
+
+          if (shouldComplete) {
+            completeDaily(win);
+            return;
+          }
+
           app.message = "Try again.";
           saveDaily(app.today, app.daily);
           render();
-        }
+        }, totalRevealMs);
       }
 
       function completeDaily(win) {
+        app.isRevealing = false;
+        app.revealingRow = null;
         const before = app.stats.currentStreak;
         app.daily.completed = true;
         app.daily.win = win;
@@ -1327,7 +1427,8 @@
           `Abyssle ${app.daily.date} ${outcome}`,
           `Declaration: ${declaration}`,
           `Streak: ${app.stats.currentStreak} (best ${app.stats.bestStreak})`,
-          rows
+          rows,
+          SITE_URL
         ].join("\n");
       }
 

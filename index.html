@@ -1,0 +1,1547 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Abyssle</title>
+  <meta name="description" content="A daily word game where the answer is abyss 90% of the time.">
+  <style>
+    :root {
+      --ink: #eff8f6;
+      --muted: #9bb7b4;
+      --dim: #5b7374;
+      --void: #02060a;
+      --deep: #05131d;
+      --panel: rgba(5, 22, 32, 0.84);
+      --panel-strong: rgba(7, 32, 45, 0.95);
+      --line: rgba(132, 232, 218, 0.2);
+      --line-strong: rgba(132, 232, 218, 0.48);
+      --green: #2ea873;
+      --yellow: #c6a94b;
+      --gray: #344247;
+      --teal: #62e2d0;
+      --blue: #317b96;
+      --danger: #d46b76;
+      --shadow: rgba(0, 0, 0, 0.45);
+      color-scheme: dark;
+      font-family: "Trebuchet MS", "Arial Narrow", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--void);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 50% -12%, rgba(75, 210, 197, 0.28), transparent 28rem),
+        radial-gradient(circle at 8% 20%, rgba(49, 123, 150, 0.18), transparent 18rem),
+        linear-gradient(180deg, #071a27 0%, #02070b 52%, #000204 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 1px) 0 0 / 100% 5.5rem,
+        radial-gradient(circle at 25% 90%, rgba(98, 226, 208, 0.12), transparent 20rem),
+        radial-gradient(circle at 80% 80%, rgba(30, 100, 130, 0.18), transparent 24rem);
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.25));
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 1rem;
+    }
+
+    .topbar {
+      width: min(64rem, 100%);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.5rem 0 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      min-width: 0;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 2rem;
+      line-height: 1;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .date {
+      color: var(--muted);
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    .icon-button,
+    .primary,
+    .secondary,
+    .choice {
+      border: 1px solid var(--line);
+      background: rgba(6, 25, 35, 0.78);
+      box-shadow: 0 1rem 3rem var(--shadow);
+      transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+    }
+
+    .icon-button:hover,
+    .primary:hover,
+    .secondary:hover,
+    .choice:hover {
+      border-color: var(--line-strong);
+      transform: translateY(-1px);
+    }
+
+    .icon-button {
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 0.5rem;
+      display: inline-grid;
+      place-items: center;
+      font-size: 1.15rem;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .stage {
+      width: min(64rem, 100%);
+      margin: 0 auto;
+      display: grid;
+      align-content: center;
+      gap: 1.25rem;
+      padding: 0 0 1rem;
+    }
+
+    .footer {
+      width: min(64rem, 100%);
+      margin: 0 auto;
+      padding: 0.75rem 0 0.25rem;
+      color: var(--dim);
+      font-size: 0.82rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .footer a {
+      color: var(--muted);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(155, 183, 180, 0.35);
+    }
+
+    .footer a:hover {
+      color: var(--teal);
+      border-bottom-color: var(--teal);
+    }
+
+    .intro,
+    .result,
+    .stats-panel,
+    .rules-panel {
+      background: linear-gradient(180deg, var(--panel-strong), rgba(3, 11, 17, 0.9));
+      border: 1px solid var(--line);
+      border-radius: 0.5rem;
+      box-shadow: 0 1.4rem 4rem var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .intro,
+    .result {
+      padding: 1.2rem;
+    }
+
+    .eyebrow {
+      color: var(--teal);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      margin-bottom: 0.55rem;
+    }
+
+    .intro h2,
+    .result h2 {
+      font-size: 2rem;
+      line-height: 1.04;
+      letter-spacing: 0;
+      margin-bottom: 0.8rem;
+    }
+
+    .lead {
+      color: var(--muted);
+      line-height: 1.55;
+      max-width: 42rem;
+    }
+
+    .choices {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.9rem;
+      margin-top: 1.25rem;
+    }
+
+    .choice {
+      min-height: 11rem;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      text-align: left;
+      display: grid;
+      align-content: space-between;
+      gap: 1rem;
+    }
+
+    .choice strong {
+      display: block;
+      font-size: 1.35rem;
+      letter-spacing: 0;
+      margin-bottom: 0.4rem;
+    }
+
+    .choice span,
+    .choice small {
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .choice small {
+      display: block;
+      color: var(--teal);
+    }
+
+    .game {
+      display: grid;
+      justify-items: center;
+      gap: 1rem;
+    }
+
+    .game-meta {
+      width: min(30rem, 100%);
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .grid {
+      width: min(22.5rem, calc(100vw - 2rem));
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.5rem;
+    }
+
+    .tile {
+      aspect-ratio: 1;
+      border: 1px solid var(--line);
+      border-radius: 0.35rem;
+      background: rgba(2, 9, 14, 0.68);
+      display: grid;
+      place-items: center;
+      font-size: 1.6rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      line-height: 1;
+      box-shadow: inset 0 0 1.6rem rgba(98, 226, 208, 0.04);
+    }
+
+    .tile.filled {
+      border-color: rgba(239, 248, 246, 0.42);
+    }
+
+    .tile.green {
+      background: var(--green);
+      border-color: var(--green);
+      color: #001d13;
+    }
+
+    .tile.yellow {
+      background: var(--yellow);
+      border-color: var(--yellow);
+      color: #171000;
+    }
+
+    .tile.gray {
+      background: var(--gray);
+      border-color: var(--gray);
+      color: var(--ink);
+    }
+
+    .message {
+      min-height: 1.5rem;
+      color: var(--teal);
+      text-align: center;
+    }
+
+    .keyboard {
+      width: min(39rem, 100%);
+      display: grid;
+      gap: 0.45rem;
+      touch-action: manipulation;
+    }
+
+    .key-row {
+      display: flex;
+      justify-content: center;
+      gap: 0.35rem;
+    }
+
+    .key {
+      min-width: 0;
+      height: 3.2rem;
+      flex: 1 1 0;
+      max-width: 3.25rem;
+      border: 1px solid rgba(155, 183, 180, 0.2);
+      border-radius: 0.35rem;
+      background: rgba(21, 45, 54, 0.95);
+      color: var(--ink);
+      font-size: 0.94rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      box-shadow: 0 0.75rem 1.6rem rgba(0, 0, 0, 0.22);
+    }
+
+    .key.wide {
+      flex-basis: 4.8rem;
+      max-width: 5rem;
+      font-size: 0.76rem;
+    }
+
+    .key.green {
+      background: var(--green);
+      border-color: var(--green);
+      color: #001d13;
+    }
+
+    .key.yellow {
+      background: var(--yellow);
+      border-color: var(--yellow);
+      color: #171000;
+    }
+
+    .key.gray {
+      background: var(--gray);
+      border-color: var(--gray);
+      color: var(--ink);
+    }
+
+    .result {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .result.win {
+      border-color: rgba(98, 226, 208, 0.42);
+    }
+
+    .result.loss {
+      border-color: rgba(212, 107, 118, 0.45);
+    }
+
+    .answer-line {
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .answer-line strong {
+      color: var(--ink);
+      text-transform: uppercase;
+    }
+
+    .result-grid {
+      display: grid;
+      gap: 0.35rem;
+      color: var(--ink);
+      font-family: Arial, sans-serif;
+      font-size: 1.35rem;
+      line-height: 1;
+    }
+
+    .result-impact {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.65rem;
+    }
+
+    .impact-stat {
+      min-height: 5.25rem;
+      border: 1px solid var(--line);
+      border-radius: 0.45rem;
+      padding: 0.75rem;
+      background: rgba(2, 12, 18, 0.58);
+      display: grid;
+      align-content: center;
+      gap: 0.3rem;
+    }
+
+    .result.win .impact-stat:first-child {
+      border-color: rgba(98, 226, 208, 0.62);
+      box-shadow: inset 0 0 1.8rem rgba(98, 226, 208, 0.08);
+    }
+
+    .result.loss .impact-stat:first-child {
+      border-color: rgba(212, 107, 118, 0.68);
+      box-shadow: inset 0 0 1.8rem rgba(212, 107, 118, 0.08);
+    }
+
+    .impact-stat b {
+      font-size: 1.6rem;
+      line-height: 1;
+    }
+
+    .impact-stat span {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.15;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+    }
+
+    .primary,
+    .secondary {
+      min-height: 2.8rem;
+      border-radius: 0.45rem;
+      padding: 0 1rem;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+
+    .primary {
+      background: linear-gradient(180deg, rgba(98, 226, 208, 0.95), rgba(49, 123, 150, 0.95));
+      color: #001316;
+      border-color: rgba(98, 226, 208, 0.9);
+    }
+
+    .secondary {
+      color: var(--ink);
+    }
+
+    .stats-panel {
+      padding: 1rem;
+      display: none;
+    }
+
+    .stats-panel.open,
+    .rules-panel.open {
+      display: block;
+    }
+
+    .stats-head,
+    .rules-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .stats-head h2,
+    .rules-head h2 {
+      font-size: 1.25rem;
+    }
+
+    .rules-panel {
+      padding: 1rem;
+      display: none;
+    }
+
+    .rules-content {
+      display: grid;
+      gap: 0.85rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .rules-content section {
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    .rules-content h3 {
+      color: var(--ink);
+      font-size: 1rem;
+    }
+
+    .rules-content ul {
+      margin: 0;
+      padding-left: 1.15rem;
+    }
+
+    .rules-content li + li {
+      margin-top: 0.25rem;
+    }
+
+    .example-row {
+      display: flex;
+      gap: 0.35rem;
+      margin-top: 0.25rem;
+    }
+
+    .example-tile {
+      width: 2.1rem;
+      height: 2.1rem;
+      border-radius: 0.3rem;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      color: #001316;
+      text-transform: uppercase;
+    }
+
+    .example-tile.green {
+      background: var(--green);
+    }
+
+    .example-tile.yellow {
+      background: var(--yellow);
+      color: #171000;
+    }
+
+    .example-tile.gray {
+      background: var(--gray);
+      color: var(--ink);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.65rem;
+    }
+
+    .stat {
+      min-height: 5rem;
+      border: 1px solid var(--line);
+      border-radius: 0.45rem;
+      padding: 0.75rem;
+      background: rgba(2, 12, 18, 0.58);
+      display: grid;
+      align-content: center;
+      gap: 0.3rem;
+    }
+
+    .stat b {
+      font-size: 1.45rem;
+      line-height: 1;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.15;
+    }
+
+    .fine-print {
+      color: var(--dim);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .dev-panel {
+      border: 1px dashed rgba(98, 226, 208, 0.45);
+      border-radius: 0.5rem;
+      padding: 0.85rem;
+      background: rgba(2, 12, 18, 0.72);
+      color: var(--muted);
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .dev-panel strong {
+      color: var(--ink);
+    }
+
+    .dev-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .dev-links a {
+      min-height: 2.25rem;
+      border: 1px solid var(--line);
+      border-radius: 0.35rem;
+      padding: 0.45rem 0.65rem;
+      color: var(--ink);
+      text-decoration: none;
+      background: rgba(6, 25, 35, 0.78);
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (min-width: 48rem) {
+      .app {
+        padding: 1.4rem;
+      }
+
+      h1 {
+        font-size: 2.45rem;
+      }
+
+      .intro,
+      .result {
+        padding: 1.6rem;
+      }
+
+      .intro h2,
+      .result h2 {
+        font-size: 2.65rem;
+      }
+
+      .stage {
+        padding-bottom: 1.4rem;
+      }
+    }
+
+    @media (max-width: 42rem) {
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .brand {
+        display: grid;
+        gap: 0.25rem;
+      }
+
+      h1 {
+        font-size: 1.72rem;
+      }
+
+      .choices,
+      .result-impact,
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .choice {
+        min-height: 8.8rem;
+      }
+
+      .tile {
+        font-size: 1.35rem;
+      }
+
+      .key {
+        height: 3rem;
+        font-size: 0.82rem;
+      }
+
+      .key.wide {
+        flex-basis: 3.8rem;
+        font-size: 0.68rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <h1>Abyssle</h1>
+        <div class="date" id="dateLabel"></div>
+      </div>
+      <div class="top-actions">
+        <button class="icon-button" id="rulesToggle" type="button" aria-label="Open how to play" title="How to play">?</button>
+        <button class="icon-button" id="statsToggle" type="button" aria-label="Open stats" title="Stats">#</button>
+      </div>
+    </header>
+
+    <main class="stage" id="stage"></main>
+
+    <footer class="footer">
+      <span>&copy; 2026 Abyssle</span>
+      <span>Created by <a href="https://conorneilson.com" target="_blank" rel="noreferrer">Conor Neilson</a></span>
+    </footer>
+  </div>
+
+  <template id="statsTemplate">
+    <section class="stats-panel" id="statsPanel" aria-live="polite">
+      <div class="stats-head">
+        <h2>Stats</h2>
+        <button class="icon-button" id="statsClose" type="button" aria-label="Close stats" title="Close">x</button>
+      </div>
+      <div class="stats-grid" id="statsGrid"></div>
+    </section>
+  </template>
+
+  <template id="rulesTemplate">
+    <section class="rules-panel" id="rulesPanel" aria-live="polite">
+      <div class="rules-head">
+        <h2>How to play</h2>
+        <button class="icon-button" id="rulesClose" type="button" aria-label="Close how to play" title="Close">x</button>
+      </div>
+      <div class="rules-content">
+        <section>
+          <h3>Goal</h3>
+          <p>Guess the 5-letter word for today. The answer is <strong>abyss</strong> 90% of the time. The other 10% of days use a random ocean-themed word.</p>
+        </section>
+        <section>
+          <h3>Before you guess</h3>
+          <ul>
+            <li>Choose one guess or two guesses before entering letters.</li>
+            <li>One guess: a correct answer increases your streak by 1. A wrong answer resets it to 0.</li>
+            <li>Two guesses: a correct answer keeps your streak where it is. A wrong answer resets it to 0.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>Letter colors</h3>
+          <div class="example-row" aria-label="Letter color examples">
+            <span class="example-tile green">A</span>
+            <span class="example-tile yellow">B</span>
+            <span class="example-tile gray">C</span>
+          </div>
+          <ul>
+            <li>Green means the letter is correct and in the right spot.</li>
+            <li>Yellow means the letter is in the word but in another spot.</li>
+            <li>Gray means the letter is not in the word.</li>
+          </ul>
+        </section>
+        <section>
+          <h3>Daily play</h3>
+          <ul>
+            <li>There is one puzzle per day on this device.</li>
+            <li>The puzzle resets at local midnight.</li>
+            <li>Your current streak, best streak, and stats are saved in this browser.</li>
+          </ul>
+        </section>
+      </div>
+    </section>
+  </template>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const PROD_STORAGE_PREFIX = "abyssle:v1";
+      const DEV_STORAGE_PREFIX = "abyssle:dev:v1";
+      const ANSWER_ABYSS = "abyss";
+      const OCEAN_WORDS = [
+        "coral", "shoal", "swell", "brine", "fjord", "atoll",
+        "froth", "algae", "depth", "shore", "spray", "shark",
+        "squid", "prawn", "waves", "stern", "berth", "kelps",
+        "briny", "murky", "reefs", "tides", "whale", "seals",
+        "conch", "surge", "manta", "skiff", "wreck", "wrack"
+      ];
+      const KEY_ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
+      const EMOJI = { green: "🟩", yellow: "🟨", gray: "⬛" };
+      const RANK = { gray: 1, yellow: 2, green: 3 };
+
+      const stage = document.querySelector("#stage");
+      const dateLabel = document.querySelector("#dateLabel");
+      const rulesToggle = document.querySelector("#rulesToggle");
+      const statsToggle = document.querySelector("#statsToggle");
+
+      const app = {
+        dev: getDevConfig(),
+        storage: null,
+        today: "",
+        wordInfo: null,
+        stats: null,
+        daily: null,
+        currentGuess: "",
+        message: "",
+        rulesOpen: false,
+        statsOpen: false
+      };
+
+      init();
+
+      function init() {
+        validateWordBank();
+        app.storage = getStorageKeys(app.dev.enabled);
+        applyDevReset(app.dev);
+        app.today = app.dev.date || getLocalDateString();
+        app.wordInfo = getDailyWord(app.today);
+        if (app.dev.answer) {
+          app.wordInfo = {
+            answer: app.dev.answer,
+            isAbyssDay: app.dev.answer === ANSWER_ABYSS
+          };
+        }
+        app.stats = loadStats();
+        app.daily = loadDaily(app.today);
+        dateLabel.textContent = `${formatDateLabel(app.today)}${app.dev.enabled ? " · dev" : ""}`;
+        rulesToggle.addEventListener("click", () => {
+          app.rulesOpen = !app.rulesOpen;
+          if (app.rulesOpen) app.statsOpen = false;
+          render();
+        });
+        statsToggle.addEventListener("click", () => {
+          app.statsOpen = !app.statsOpen;
+          if (app.statsOpen) app.rulesOpen = false;
+          render();
+        });
+        document.addEventListener("keydown", handlePhysicalKey);
+        clearResetParam(app.dev);
+        render();
+      }
+
+      function render() {
+        stage.innerHTML = "";
+
+        if (!app.daily || !app.daily.declaration) {
+          stage.append(renderDeclaration());
+        } else if (app.daily.completed) {
+          stage.append(renderResult());
+        } else {
+          stage.append(renderGame());
+        }
+
+        const rulesPanel = renderRulesPanel();
+        stage.append(rulesPanel);
+        const statsPanel = renderStatsPanel();
+        stage.append(statsPanel);
+        if (app.dev.enabled) {
+          stage.append(renderDevPanel());
+        }
+        rulesToggle.setAttribute("aria-label", app.rulesOpen ? "Close how to play" : "Open how to play");
+        statsToggle.setAttribute("aria-label", app.statsOpen ? "Close stats" : "Open stats");
+      }
+
+      function renderDeclaration() {
+        const section = document.createElement("section");
+        section.className = "intro";
+        section.innerHTML = `
+          <p class="eyebrow">Daily game</p>
+          <h2>Choose your guesses</h2>
+          <p class="lead">
+            The answer is abyss 90% of the time. The other 10% of days use a random ocean-themed word. Choose how many guesses you want before you start.
+          </p>
+          <div class="choices">
+            <button class="choice" type="button" data-declaration="1">
+              <span>
+                <strong>One guess</strong>
+                Higher risk, higher reward.
+              </span>
+              <small>Correct: streak +1. Wrong: streak resets.</small>
+            </button>
+            <button class="choice" type="button" data-declaration="2">
+              <span>
+                <strong>Two guesses</strong>
+                Safer, but your streak cannot grow.
+              </span>
+              <small>Correct: streak holds. Wrong: streak resets.</small>
+            </button>
+          </div>
+        `;
+
+        section.querySelectorAll("[data-declaration]").forEach((button) => {
+          button.addEventListener("click", () => declare(Number(button.dataset.declaration)));
+        });
+
+        return section;
+      }
+
+      function renderGame() {
+        const section = document.createElement("section");
+        section.className = "game";
+
+        const meta = document.createElement("div");
+        meta.className = "game-meta";
+        meta.innerHTML = `
+          <span>${app.daily.declaration === 1 ? "One guess declared" : "Two guesses declared"}</span>
+          <span>Streak ${app.stats.currentStreak}</span>
+        `;
+
+        const grid = document.createElement("div");
+        grid.className = "grid";
+        grid.setAttribute("aria-label", "Guess grid");
+        const rows = app.daily.declaration;
+        for (let row = 0; row < rows; row += 1) {
+          grid.append(renderRow(row));
+        }
+
+        const message = document.createElement("div");
+        message.className = "message";
+        message.textContent = app.message;
+
+        section.append(meta, grid, message, renderKeyboard());
+        return section;
+      }
+
+      function renderRow(rowIndex) {
+        const row = document.createElement("div");
+        row.className = "row";
+        const submittedGuess = app.daily.guesses[rowIndex] || "";
+        const active = rowIndex === app.daily.guesses.length && !app.daily.completed;
+        const letters = active ? app.currentGuess : submittedGuess;
+        const feedback = app.daily.feedback[rowIndex] || [];
+
+        for (let col = 0; col < 5; col += 1) {
+          const tile = document.createElement("div");
+          tile.className = "tile";
+          const letter = letters[col] || "";
+          tile.textContent = letter;
+          if (letter) tile.classList.add("filled");
+          if (feedback[col]) tile.classList.add(feedback[col]);
+          row.append(tile);
+        }
+
+        return row;
+      }
+
+      function renderKeyboard() {
+        const keyboard = document.createElement("div");
+        keyboard.className = "keyboard";
+        keyboard.setAttribute("aria-label", "Keyboard");
+        const states = getKeyboardStates();
+
+        KEY_ROWS.forEach((letters, index) => {
+          const keyRow = document.createElement("div");
+          keyRow.className = "key-row";
+
+          if (index === 2) {
+            keyRow.append(makeKey("Enter", "Enter", "wide"));
+          }
+
+          letters.split("").forEach((letter) => {
+            keyRow.append(makeKey(letter, letter, states[letter] || ""));
+          });
+
+          if (index === 2) {
+            keyRow.append(makeKey("Back", "Backspace", "wide"));
+          }
+
+          keyboard.append(keyRow);
+        });
+
+        return keyboard;
+      }
+
+      function makeKey(label, value, extraClass) {
+        const key = document.createElement("button");
+        key.type = "button";
+        key.className = ["key", extraClass].filter(Boolean).join(" ");
+        key.textContent = label;
+        key.addEventListener("click", () => handleInput(value));
+        return key;
+      }
+
+      function renderResult() {
+        const section = document.createElement("section");
+        section.className = `result ${app.daily.win ? "win" : "loss"}`;
+
+        const shareText = buildShareText();
+        const title = getResultTitle();
+        const body = getResultBody();
+        const impact = getResultImpact();
+        const rows = app.daily.feedback.map((row) => {
+          return `<div>${row.map((mark) => EMOJI[mark]).join("")}</div>`;
+        }).join("");
+
+        section.innerHTML = `
+          <p class="eyebrow">${app.daily.win ? "Solved" : "Missed"}</p>
+          <h2>${title}</h2>
+          <p class="answer-line">${body}</p>
+          <div class="result-impact" aria-label="Streak result">
+            ${impact.map((item) => `
+              <div class="impact-stat">
+                <b>${escapeHtml(String(item.value))}</b>
+                <span>${escapeHtml(item.label)}</span>
+              </div>
+            `).join("")}
+          </div>
+          <div class="result-grid" aria-label="Result grid">${rows}</div>
+          <div class="actions">
+            <button class="primary" id="copyButton" type="button">Copy result</button>
+          </div>
+          <p class="message">${escapeHtml(app.message)}</p>
+          <p class="fine-print">New puzzle at local midnight.</p>
+        `;
+
+        section.querySelector("#copyButton").addEventListener("click", () => copyResult(shareText));
+        return section;
+      }
+
+      function renderStatsPanel() {
+        const template = document.querySelector("#statsTemplate");
+        const fragment = template.content.cloneNode(true);
+        const panel = fragment.querySelector("#statsPanel");
+        const close = fragment.querySelector("#statsClose");
+        const grid = fragment.querySelector("#statsGrid");
+        if (app.statsOpen) panel.classList.add("open");
+        close.addEventListener("click", () => {
+          app.statsOpen = false;
+          render();
+        });
+
+        const statItems = [
+          ["Current", app.stats.currentStreak],
+          ["Best", app.stats.bestStreak],
+          ["Played", app.stats.gamesPlayed],
+          ["Win rate", `${getWinRate()}%`],
+          ["One guess", app.stats.oneGuessDeclarations],
+          ["Two guesses", app.stats.twoGuessDeclarations],
+          ["Abyss wins", app.stats.abyssWins],
+          ["Abyss losses", app.stats.abyssLosses],
+          ["Non-abyss wins", app.stats.nonAbyssWins],
+          ["Non-abyss losses", app.stats.nonAbyssLosses]
+        ];
+
+        statItems.forEach(([label, value]) => {
+          const stat = document.createElement("div");
+          stat.className = "stat";
+          stat.innerHTML = `<b>${value}</b><span>${label}</span>`;
+          grid.append(stat);
+        });
+
+        return fragment;
+      }
+
+      function renderRulesPanel() {
+        const template = document.querySelector("#rulesTemplate");
+        const fragment = template.content.cloneNode(true);
+        const panel = fragment.querySelector("#rulesPanel");
+        const close = fragment.querySelector("#rulesClose");
+        if (app.rulesOpen) panel.classList.add("open");
+        close.addEventListener("click", () => {
+          app.rulesOpen = false;
+          render();
+        });
+        return fragment;
+      }
+
+      function renderDevPanel() {
+        const section = document.createElement("section");
+        section.className = "dev-panel";
+        const answer = app.wordInfo ? app.wordInfo.answer : "";
+        const forced = app.dev.answer ? "forced" : "generated";
+        const resetMessage = app.dev.resetMessage ? `<p>${escapeHtml(app.dev.resetMessage)}</p>` : "";
+        section.innerHTML = `
+          <p><strong>Dev mode</strong> · date ${escapeHtml(app.today)} · answer ${escapeHtml(answer)} (${forced}) · isolated storage</p>
+          ${resetMessage}
+          <div class="dev-links">
+            <a href="${escapeHtml(devUrl({ date: shiftDate(app.today, -1), reset: null }))}">Previous day</a>
+            <a href="${escapeHtml(devUrl({ date: shiftDate(app.today, 1), reset: null }))}">Next day</a>
+            <a href="${escapeHtml(devUrl({ reset: "day" }))}">Reset this day</a>
+            <a href="${escapeHtml(devUrl({ reset: "all" }))}">Reset dev stats</a>
+            <a href="${escapeHtml(devUrl({ answer: ANSWER_ABYSS, reset: "day" }))}">Force abyss</a>
+            <a href="${escapeHtml(devUrl({ answer: "coral", reset: "day" }))}">Force coral</a>
+            <a href="${escapeHtml(devUrl({ answer: null, reset: "day" }))}">Use generated answer</a>
+          </div>
+        `;
+        return section;
+      }
+
+      function devUrl(overrides = {}) {
+        const params = new URLSearchParams(window.location.search);
+        params.set("dev", "1");
+
+        Object.entries(overrides).forEach(([key, value]) => {
+          if (value === null || value === undefined || value === "") {
+            params.delete(key);
+          } else {
+            params.set(key, value);
+          }
+        });
+
+        return `${window.location.pathname}?${params.toString()}`;
+      }
+
+      function declare(declaration) {
+        app.daily = {
+          date: app.today,
+          answer: app.wordInfo.answer,
+          isAbyssDay: app.wordInfo.isAbyssDay,
+          declaration,
+          guesses: [],
+          feedback: [],
+          completed: false,
+          win: false
+        };
+        app.currentGuess = "";
+        app.message = "";
+        saveDaily(app.today, app.daily);
+        render();
+      }
+
+      function handlePhysicalKey(event) {
+        if (!app.daily || app.daily.completed || !app.daily.declaration) return;
+        if (event.metaKey || event.ctrlKey || event.altKey) return;
+        if (event.key === "Enter" || event.key === "Backspace" || /^[a-zA-Z]$/.test(event.key)) {
+          event.preventDefault();
+          handleInput(event.key);
+        }
+      }
+
+      function handleInput(value) {
+        if (!app.daily || app.daily.completed || !app.daily.declaration) return;
+
+        if (value === "Enter") {
+          submitGuess();
+          return;
+        }
+
+        if (value === "Backspace") {
+          app.currentGuess = app.currentGuess.slice(0, -1);
+          app.message = "";
+          render();
+          return;
+        }
+
+        if (/^[a-zA-Z]$/.test(value) && app.currentGuess.length < 5) {
+          app.currentGuess += value.toLowerCase();
+          app.message = "";
+          render();
+        }
+      }
+
+      function submitGuess() {
+        if (!/^[a-z]{5}$/.test(app.currentGuess)) {
+          app.message = "Enter 5 letters.";
+          render();
+          return;
+        }
+
+        const guess = app.currentGuess;
+        const feedback = scoreGuess(guess, app.daily.answer);
+        app.daily.guesses.push(guess);
+        app.daily.feedback.push(feedback);
+        app.currentGuess = "";
+
+        const win = guess === app.daily.answer;
+        const outOfGuesses = app.daily.guesses.length >= app.daily.declaration;
+
+        if (win || outOfGuesses) {
+          completeDaily(win);
+        } else {
+          app.message = "Try again.";
+          saveDaily(app.today, app.daily);
+          render();
+        }
+      }
+
+      function completeDaily(win) {
+        const before = app.stats.currentStreak;
+        app.daily.completed = true;
+        app.daily.win = win;
+        updateStats(win);
+        app.daily.streakBefore = before;
+        app.daily.streakAfter = app.stats.currentStreak;
+        app.daily.bestAfter = app.stats.bestStreak;
+        app.daily.streakDelta = app.stats.currentStreak - before;
+        saveDaily(app.today, app.daily);
+        saveStats(app.stats);
+        app.statsOpen = false;
+        render();
+      }
+
+      function updateStats(win) {
+        app.stats.gamesPlayed += 1;
+        if (win) app.stats.wins += 1;
+        if (app.daily.declaration === 1) app.stats.oneGuessDeclarations += 1;
+        if (app.daily.declaration === 2) app.stats.twoGuessDeclarations += 1;
+
+        if (win && app.daily.declaration === 1) {
+          app.stats.currentStreak += 1;
+          app.stats.bestStreak = Math.max(app.stats.bestStreak, app.stats.currentStreak);
+        } else if (!win) {
+          app.stats.currentStreak = 0;
+        }
+
+        if (app.daily.isAbyssDay && win) app.stats.abyssWins += 1;
+        if (app.daily.isAbyssDay && !win) app.stats.abyssLosses += 1;
+        if (!app.daily.isAbyssDay && win) app.stats.nonAbyssWins += 1;
+        if (!app.daily.isAbyssDay && !win) app.stats.nonAbyssLosses += 1;
+      }
+
+      function scoreGuess(guess, answer) {
+        const result = Array(5).fill("gray");
+        const remaining = {};
+
+        for (let i = 0; i < 5; i += 1) {
+          if (guess[i] === answer[i]) {
+            result[i] = "green";
+          } else {
+            remaining[answer[i]] = (remaining[answer[i]] || 0) + 1;
+          }
+        }
+
+        for (let i = 0; i < 5; i += 1) {
+          if (result[i] === "green") continue;
+          if (remaining[guess[i]] > 0) {
+            result[i] = "yellow";
+            remaining[guess[i]] -= 1;
+          }
+        }
+
+        return result;
+      }
+
+      function getKeyboardStates() {
+        const states = {};
+        if (!app.daily) return states;
+
+        app.daily.guesses.forEach((guess, rowIndex) => {
+          const feedback = app.daily.feedback[rowIndex] || [];
+          guess.split("").forEach((letter, index) => {
+            const mark = feedback[index];
+            if (!states[letter] || RANK[mark] > RANK[states[letter]]) {
+              states[letter] = mark;
+            }
+          });
+        });
+
+        return states;
+      }
+
+      function getResultTitle() {
+        if (app.daily.win && app.daily.declaration === 1) {
+          return `Streak +${Math.max(0, getStreakAfter() - getStreakBefore())}`;
+        }
+        if (app.daily.win) return "Streak held";
+        return getStreakBefore() > 0 ? "Streak lost" : "Missed";
+      }
+
+      function getResultBody() {
+        const answer = `<strong>${escapeHtml(app.daily.answer)}</strong>`;
+        if (app.daily.win && app.daily.declaration === 1) {
+          return `Answer: ${answer}. Current streak: ${getStreakAfter()}.`;
+        }
+        if (app.daily.win && app.daily.declaration === 2) {
+          return `Answer: ${answer}. Current streak: ${getStreakAfter()} unchanged.`;
+        }
+        const lost = getStreakBefore();
+        return lost > 0
+          ? `Answer: ${answer}. You lost a streak of ${lost}.`
+          : `Answer: ${answer}. Current streak: 0.`;
+      }
+
+      function getResultImpact() {
+        const before = getStreakBefore();
+        const after = getStreakAfter();
+        const best = getBestAfter();
+
+        if (app.daily.win && app.daily.declaration === 1) {
+          return [
+            { label: "Current streak", value: after },
+            { label: "Gained today", value: `+${Math.max(0, after - before)}` },
+            { label: "Best streak", value: best }
+          ];
+        }
+
+        if (app.daily.win) {
+          return [
+            { label: "Current streak", value: after },
+            { label: "Streak change", value: "0" },
+            { label: "Best streak", value: best }
+          ];
+        }
+
+        return [
+          { label: "Streak lost", value: before },
+          { label: "Current streak", value: after },
+          { label: "Best streak", value: best }
+        ];
+      }
+
+      function getStreakBefore() {
+        if (Number.isInteger(app.daily.streakBefore)) return app.daily.streakBefore;
+        if (app.daily.win && app.daily.declaration === 1) return Math.max(0, app.stats.currentStreak - 1);
+        if (app.daily.win) return app.stats.currentStreak;
+        return 0;
+      }
+
+      function getStreakAfter() {
+        if (Number.isInteger(app.daily.streakAfter)) return app.daily.streakAfter;
+        return app.stats.currentStreak;
+      }
+
+      function getBestAfter() {
+        if (Number.isInteger(app.daily.bestAfter)) return app.daily.bestAfter;
+        return app.stats.bestStreak;
+      }
+
+      function buildShareText() {
+        const rows = app.daily.feedback.map((row) => row.map((mark) => EMOJI[mark]).join("")).join("\n");
+        const declaration = app.daily.declaration === 1 ? "one guess" : "two guesses";
+        const outcome = app.daily.win ? `${app.daily.guesses.length}/${app.daily.declaration}` : `X/${app.daily.declaration}`;
+        return [
+          `Abyssle ${app.daily.date} ${outcome}`,
+          `Declaration: ${declaration}`,
+          `Streak: ${app.stats.currentStreak} (best ${app.stats.bestStreak})`,
+          rows
+        ].join("\n");
+      }
+
+      async function copyResult(text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          app.message = "Copied to clipboard.";
+        } catch (error) {
+          app.message = "Copy failed. Try again.";
+        }
+        render();
+      }
+
+      function getDailyWord(dateString) {
+        const random = mulberry32(hashString(dateString));
+        const abyssRoll = random();
+        const choiceRoll = random();
+        if (abyssRoll < 0.9) {
+          return { answer: ANSWER_ABYSS, isAbyssDay: true };
+        }
+        return {
+          answer: OCEAN_WORDS[Math.floor(choiceRoll * OCEAN_WORDS.length)],
+          isAbyssDay: false
+        };
+      }
+
+      function hashString(value) {
+        let hash = 2166136261;
+        for (let i = 0; i < value.length; i += 1) {
+          hash ^= value.charCodeAt(i);
+          hash = Math.imul(hash, 16777619);
+        }
+        return hash >>> 0;
+      }
+
+      function mulberry32(seed) {
+        return function seededRandom() {
+          let value = seed += 0x6D2B79F5;
+          value = Math.imul(value ^ value >>> 15, value | 1);
+          value ^= value + Math.imul(value ^ value >>> 7, value | 61);
+          return ((value ^ value >>> 14) >>> 0) / 4294967296;
+        };
+      }
+
+      function getLocalDateString(date = new Date()) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      function shiftDate(dateString, amount) {
+        const [year, month, day] = dateString.split("-").map(Number);
+        const date = new Date(year, month - 1, day);
+        date.setDate(date.getDate() + amount);
+        return getLocalDateString(date);
+      }
+
+      function formatDateLabel(dateString) {
+        const [year, month, day] = dateString.split("-").map(Number);
+        return new Intl.DateTimeFormat(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric"
+        }).format(new Date(year, month - 1, day));
+      }
+
+      function getDevConfig() {
+        const params = new URLSearchParams(window.location.search);
+        const enabled = params.get("dev") === "1" || params.get("dev") === "true";
+        const config = {
+          enabled,
+          date: null,
+          answer: null,
+          reset: null,
+          resetMessage: ""
+        };
+
+        if (!enabled) return config;
+
+        const date = params.get("date");
+        const answer = params.get("answer");
+        const reset = params.get("reset");
+
+        if (date && isValidDateString(date)) {
+          config.date = date;
+        }
+
+        if (answer && /^[a-zA-Z]{5}$/.test(answer)) {
+          config.answer = answer.toLowerCase();
+        }
+
+        if (reset === "day" || reset === "all") {
+          config.reset = reset;
+        }
+
+        return config;
+      }
+
+      function getStorageKeys(devEnabled) {
+        const prefix = devEnabled ? DEV_STORAGE_PREFIX : PROD_STORAGE_PREFIX;
+        return {
+          statsKey: `${prefix}:stats`,
+          dailyPrefix: `${prefix}:daily:`
+        };
+      }
+
+      function applyDevReset(dev) {
+        if (!dev.enabled || !dev.reset) return;
+
+        if (dev.reset === "day") {
+          const date = dev.date || getLocalDateString();
+          localStorage.removeItem(`${app.storage.dailyPrefix}${date}`);
+          dev.resetMessage = `Reset test game for ${date}.`;
+          return;
+        }
+
+        const keys = [];
+        for (let index = 0; index < localStorage.length; index += 1) {
+          keys.push(localStorage.key(index));
+        }
+
+        keys.forEach((key) => {
+          if (!key) return;
+          if (key === app.storage.statsKey || key.startsWith(app.storage.dailyPrefix)) {
+            localStorage.removeItem(key);
+          }
+        });
+        dev.resetMessage = "Reset all dev stats and test games.";
+      }
+
+      function clearResetParam(dev) {
+        if (!dev.enabled || !dev.reset || !window.history || !window.history.replaceState) return;
+        const params = new URLSearchParams(window.location.search);
+        params.delete("reset");
+        const query = params.toString();
+        const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+        try {
+          window.history.replaceState(null, "", nextUrl);
+        } catch (error) {
+          return;
+        }
+      }
+
+      function isValidDateString(value) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+        const [year, month, day] = value.split("-").map(Number);
+        const date = new Date(year, month - 1, day);
+        return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+      }
+
+      function loadStats() {
+        const defaults = {
+          currentStreak: 0,
+          bestStreak: 0,
+          gamesPlayed: 0,
+          wins: 0,
+          oneGuessDeclarations: 0,
+          twoGuessDeclarations: 0,
+          abyssWins: 0,
+          abyssLosses: 0,
+          nonAbyssWins: 0,
+          nonAbyssLosses: 0
+        };
+        return { ...defaults, ...readJson(app.storage.statsKey, {}) };
+      }
+
+      function saveStats(stats) {
+        localStorage.setItem(app.storage.statsKey, JSON.stringify(stats));
+      }
+
+      function loadDaily(dateString) {
+        const daily = readJson(`${app.storage.dailyPrefix}${dateString}`, null);
+        if (!daily) return null;
+        if (!Array.isArray(daily.guesses) || !Array.isArray(daily.feedback)) return null;
+        return daily;
+      }
+
+      function saveDaily(dateString, daily) {
+        localStorage.setItem(`${app.storage.dailyPrefix}${dateString}`, JSON.stringify(daily));
+      }
+
+      function readJson(key, fallback) {
+        try {
+          const raw = localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : fallback;
+        } catch (error) {
+          return fallback;
+        }
+      }
+
+      function getWinRate() {
+        if (!app.stats.gamesPlayed) return 0;
+        return Math.round((app.stats.wins / app.stats.gamesPlayed) * 100);
+      }
+
+      function validateWordBank() {
+        const invalid = OCEAN_WORDS.filter((word) => !/^[a-z]{5}$/.test(word));
+        if (invalid.length) {
+          throw new Error(`Invalid ocean words: ${invalid.join(", ")}`);
+        }
+      }
+
+      function escapeHtml(value) {
+        return value.replace(/[&<>"']/g, (char) => {
+          return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            "\"": "&quot;",
+            "'": "&#039;"
+          }[char];
+        });
+      }
+
+      window.AbyssleDebug = {
+        scoreGuess,
+        getDailyWord,
+        getLocalDateString,
+        oceanWords: [...OCEAN_WORDS]
+      };
+    })();
+  </script>
+</body>
+</html>

@@ -1086,7 +1086,7 @@
           </div>
           <div class="result-grid" aria-label="Result grid">${rows}</div>
           <div class="actions">
-            <button class="primary" id="copyButton" type="button">Copy result</button>
+            <button class="primary" id="copyButton" type="button">Copy spoiler-free result</button>
           </div>
           <p class="message">${escapeHtml(app.message)}</p>
           <p class="fine-print">New puzzle at local midnight.</p>
@@ -1420,14 +1420,11 @@
       }
 
       function buildShareText() {
-        const rows = app.daily.feedback.map((row) => row.map((mark) => EMOJI[mark]).join("")).join("\n");
-        const declaration = app.daily.declaration === 1 ? "one guess" : "two guesses";
-        const outcome = app.daily.win ? `${app.daily.guesses.length}/${app.daily.declaration}` : `X/${app.daily.declaration}`;
+        const outcome = app.daily.win ? "Solved" : "Missed";
         return [
-          `Abyssle ${app.daily.date} ${outcome}`,
-          `Declaration: ${declaration}`,
+          `Abyssle ${app.daily.date}`,
+          outcome,
           `Streak: ${app.stats.currentStreak} (best ${app.stats.bestStreak})`,
-          rows,
           SITE_URL
         ].join("\n");
       }

@@ -1,0 +1,1 @@
+This was just a fun idea I had and wanted to see how well it would work. 90% vibe coded. Feel free to play but may have some rough edges. Feel free to report!
